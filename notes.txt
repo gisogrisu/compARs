@@ -1,0 +1,24 @@
+3D-Pfeil, der nach Norden, auf ein N zeigt
+
+TODO: layout.xml wieder rein, wenn SurfaceView benötigt wird
+
+Relative Layout mit schwarzem Hintegrund
+Orientation vertical
+Grüner 3-D Pfeil
+N E S W angeordnet an (unsichtbarem) Kreis
+DEBUG-Button unten Mitte, der Debug-bool auf true setzt. (Zb zum Abschalten des Sensoreinflusses auf Grafik)
+
+Pfeil senkrecht nach oben (keine x-Koordinate, keine z-Koordinate), wenn Handy parallel zu Boden und Kopf in Richtung N
+Nur Bereich von widthxwidth benutzen, damit Buchstaben oder Pfeilenden nicht verschwinden
+
+Using TextureViews to embedd GL into RelativeLayout
+https://groups.google.com/forum/#!msg/android-developers/U5RXFGpAHPE/IqHeIeGXhr0J
+http://stackoverflow.com/questions/12061419/converting-from-glsurfaceview-to-textureview-via-gltextureview
+
+Improvements:
+GPS-Location erfassen und Entfernung zum Nordpol anzeigen (GPS-Koordination von Nordpol notwendig)
+Destination-Button: Eingabe von Ziel-Koordinaten -> Pfeil zeigt auf Ziel, nur N weiter in Richtung Norden
+Entfernugsanzeige zum Ziel
+Richtungsbestimmung mit Sensoren und GPS (sobald GPS-Array != null) -> gefährlich, da langsam
+
+wie lässt sich da Augmented einbauen?
