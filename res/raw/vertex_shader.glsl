@@ -9,17 +9,19 @@
 
 // Current vertex position in vector (x, y, z, w)
 attribute vec4 a_Position;  
-// attribute vec4 a_Color;
+attribute vec4 a_Color;
 
-// varying vec4 v_Color;
+// Blend the given values
+varying vec4 v_Color;
 
 void main()                    
 {                            
-//	v_Color = a_Color;
+	v_Color = a_Color;
 	
 	// Copy position to output
 //	gl_Position = u_Matrix * a_Position;
 	gl_Position = a_Position;
 	
+	// Define size of GL_POINTS
 	gl_PointSize = 10.0;          
 }          

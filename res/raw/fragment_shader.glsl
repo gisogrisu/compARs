@@ -8,12 +8,11 @@
 // Default precision for all floating point datatypes in fragment shader
 precision mediump float; 
 
-uniform vec4 u_Color;
-// varying vec4 v_Color;
+// Blend the given values
+varying vec4 v_Color;
 
 void main()
 {
 	// Copy colour to output
-	gl_FragColor = u_Color;
-//	gl_FragColor = v_Color;
+	gl_FragColor = v_Color;
 }
