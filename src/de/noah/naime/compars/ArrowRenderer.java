@@ -1,5 +1,6 @@
 /****************************** CompARs ******************************
-* TODO:	OpenGlES Chapter 6
+* TODO:	OpenGlES Chapter 6 / AirHockey3D
+* 	Change rotation so arrow rotates around middle point
 * 	Remove menu bar
 *	Description, Author, etc
 * 	Change to british english
@@ -20,7 +21,10 @@ import static android.opengl.GLES20.glUniformMatrix4fv;
 import static android.opengl.GLES20.glUseProgram;
 import static android.opengl.GLES20.glVertexAttribPointer;
 import static android.opengl.GLES20.glViewport;
-import static android.opengl.Matrix.orthoM;
+import static android.opengl.Matrix.multiplyMM;
+import static android.opengl.Matrix.rotateM;
+import static android.opengl.Matrix.setIdentityM;
+import static android.opengl.Matrix.translateM;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -30,6 +34,7 @@ import javax.microedition.khronos.opengles.GL10;
 
 import android.content.Context;
 import android.opengl.GLSurfaceView.Renderer;
+import de.noah.naime.compars.util.MatrixHelper;
 import de.noah.naime.compars.util.ShaderHelper;
 import de.noah.naime.compars.util.TextResourceReader;
 
@@ -37,6 +42,7 @@ public class ArrowRenderer implements Renderer {
 	
 	private static final String A_COLOR = "a_Color";
 	private static final String A_POSITION = "a_Position";  
+//	private static final int POSITION_COMPONENT_COUNT = 4; 
 	private static final int POSITION_COMPONENT_COUNT = 2;
 	private static final int COLOR_COMPONENT_COUNT = 3;
 	private static final int BYTES_PER_FLOAT = 4;
@@ -56,6 +62,8 @@ public class ArrowRenderer implements Renderer {
 	// Matrix for othogonal projection
 	private final float[] projectionMatrix = new float[16];
 	private int uMatrixLocation;
+	// Model matrix
+	private final float[] modelMatrix = new float[16];
 	
 	// Constructor
 	public ArrowRenderer(Context context) {
@@ -65,20 +73,18 @@ public class ArrowRenderer implements Renderer {
 			// Order of coordinates: X, Y, Z, W, R, G, B
 			
 			// Head
-//			0,	0.4f,	-0.1f,	1f,	0.5f,	1f,	0.5f,	// Top
-//			-0.4f,	0.1f,	-0.1f,	1f,	0.5f,	1f,	0.5f,	// Left
-//			0.4f,	0.1f,	-0.1f,	1f,	0.5f,	1f,	0.5f,	// Right
+//			0,	0.5f,	-0.5f,	2f,	1f,	0.2f,	0.2f,	// Top
+//			-0.5f,	0.1f,	-0.5f,	1.6f,	1f,	0.2f,	0.2f,	// Left
+//			0.5f,	0.1f,	-0.5f,	1.6f,	1f,	0.2f,	0.2f,	// Right
+//			
+//			// Tail - Triangle Fan
+//			0,	-0.1f,	-0.5f,	1.4f,	0.2f,	1f,	0.2f,	// Middle
+//			-0.25f,	-0.5f,	-0.5f,	1f,	0.2f,	1f,	0.2f,	// Bottom left
+//			0.25f,	-0.5f,	-0.5f,	1f,	0.2f,	1f,	0.2f,	// Bottom right
+//			0.25f,	0.1f,	-0.5f,	1.6f,	1f,	0.2f,	0.2f,	// Top right
+//			-0.25f,	0.1f,	-0.5f,	1.6f,	1f,	0.2f,	0.2f,	// Top left
+//			-0.25f,	-0.5f,	-0.5f,	1f,	0.2f,	1f,	0.2f,	// Bottom left
 			
-			// Tail - Triangle 1
-//			-0.2f,	0.1f,	-0.1f,	1f,	0.4f,	1f,	0.4f,	// Top left
-//			0.2f,	0.1f,	-0.1f,	1f,	0.4f,	1f,	0.4f,	// Top right
-//			-0.2f,	-0.3f,	-0.1f,	1f,	0.4f,	1f,	0.4f,	// Bottom left
-			
-			// Tail - Triangle 2
-//			-0.2f,	-0.3f,	-0.1f,	1f,	0.4f,	1f,	0.4f,	// Bottom left
-//			0.2f,	-0.3f,	-0.1f,	1f,	0.4f,	1f,	0.4f,	// Bottom right
-//			0.2f,	0.1f,	-0.1f,	1f,	0.4f,	1f,	0.4f,	// Top right
-
 			// Order of coordinates: X, Y, R, G, B
 			// Head
 			0,	0.5f,	1f,	0.2f,	0.2f,	// Top
@@ -92,8 +98,7 @@ public class ArrowRenderer implements Renderer {
 			0.25f,	0.1f,	1f,	0.2f,	0.2f,	// Top right
 			-0.25f,	0.1f,	1f,	0.2f,	0.2f,	// Top left
 			-0.25f,	-0.5f,	0.2f,	1f,	0.2f,	// Bottom left
-		};       
-
+		};
 		
 		vertexData = ByteBuffer
 			// allocate a block of native memory
@@ -162,18 +167,30 @@ public class ArrowRenderer implements Renderer {
 	
 		// Tell OpenGL the size of the surface
 		glViewport(0, 0, width, height);
-        
-		final float aspectRatio = width > height ? 
-			(float) width / (float) height : 
-			(float) height / (float) width;
+		
+		// Move arrow into the distance
+		MatrixHelper.perspectiveM(projectionMatrix, 45, (float) width / (float) height, 1f, 10f);
+		
+		setIdentityM(modelMatrix, 0);
+		translateM(modelMatrix, 0, 0f, 0f, -2.5f);
+		rotateM(modelMatrix, 0, -45f, 1f, 0f, 0f);
+		
+		// Apply projectionMatrix to vertices
+		final float[] temp = new float[16];
+		multiplyMM(temp, 0, projectionMatrix, 0, modelMatrix, 0);
+		System.arraycopy(temp, 0, projectionMatrix, 0, temp.length);
 
-		if (width > height) {
-			// Landscape
-			orthoM(projectionMatrix, 0, -aspectRatio, aspectRatio, -1f, 1f, -1f, 1f);
-		} else {
-			// Portrait or square
-			orthoM(projectionMatrix, 0, -1f, 1f, -aspectRatio, aspectRatio, -1f, 1f);
-		}   
+//		final float aspectRatio = width > height ? 
+//			(float) width / (float) height : 
+//			(float) height / (float) width;
+
+//		if (width > height) {
+//			// Landscape
+//			orthoM(projectionMatrix, 0, -aspectRatio, aspectRatio, -1f, 1f, -1f, 1f);
+//		} else {
+//			// Portrait or square
+//			orthoM(projectionMatrix, 0, -1f, 1f, -aspectRatio, aspectRatio, -1f, 1f);
+//		}   
 	}
 
 	// Draw a frame
