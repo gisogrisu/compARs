@@ -95,8 +95,10 @@ public class ArrowRenderer implements Renderer {
 			0,	-0.1f,	0.2f,	1f,	0.2f,	// Middle
 			-0.25f,	-0.5f,	0.2f,	1f,	0.2f,	// Bottom left
 			0.25f,	-0.5f,	0.2f,	1f,	0.2f,	// Bottom right
+			0.25f,	-0.1f,	0.2f,	1f,	0.2f,	// Middle right
 			0.25f,	0.1f,	1f,	0.2f,	0.2f,	// Top right
 			-0.25f,	0.1f,	1f,	0.2f,	0.2f,	// Top left
+			-0.25f,	-0.1f,	0.2f,	1f,	0.2f,	// Middle left
 			-0.25f,	-0.5f,	0.2f,	1f,	0.2f,	// Bottom left
 		};
 		
@@ -208,8 +210,8 @@ public class ArrowRenderer implements Renderer {
 		glDrawArrays(GL_TRIANGLES, 0, 3);
 		
 		// Draw Arrow tail
-		// Draw triangle fan, start after first object, read in six vertices
-		glDrawArrays(GL_TRIANGLE_FAN, 3, 6);
+		// Draw triangle fan, start after first object, read in eight vertices
+		glDrawArrays(GL_TRIANGLE_FAN, 3, 8);
 		
 	}
 }
