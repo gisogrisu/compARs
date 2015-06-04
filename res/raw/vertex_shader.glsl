@@ -5,7 +5,8 @@
 * triangles.
 *********************************************************************/
 
-// uniform mat4 u_Matrix;
+// Matrix for orthographic projection
+uniform mat4 u_Matrix;
 
 // Current vertex position in vector (x, y, z, w)
 attribute vec4 a_Position;  
@@ -18,9 +19,8 @@ void main()
 {                            
 	v_Color = a_Color;
 	
-	// Copy position to output
-//	gl_Position = u_Matrix * a_Position;
-	gl_Position = a_Position;
+	// Do orthographic projection and copy to output
+	gl_Position = u_Matrix * a_Position;
 	
 	// Define size of GL_POINTS
 	gl_PointSize = 10.0;          

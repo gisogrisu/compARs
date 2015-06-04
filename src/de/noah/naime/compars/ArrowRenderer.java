@@ -1,7 +1,8 @@
 /****************************** CompARs ******************************
-* TODO:	Description, Author, etc
+* TODO:	OpenGlES Chapter 6
+* 	Remove menu bar
+*	Description, Author, etc
 * 	Change to british english
-* 	OpenGlES Chapter 5
 *********************************************************************/
 package de.noah.naime.compars;
 
@@ -14,9 +15,12 @@ import static android.opengl.GLES20.glClearColor;
 import static android.opengl.GLES20.glDrawArrays;
 import static android.opengl.GLES20.glEnableVertexAttribArray;
 import static android.opengl.GLES20.glGetAttribLocation;
+import static android.opengl.GLES20.glGetUniformLocation;
+import static android.opengl.GLES20.glUniformMatrix4fv;
 import static android.opengl.GLES20.glUseProgram;
 import static android.opengl.GLES20.glVertexAttribPointer;
 import static android.opengl.GLES20.glViewport;
+import static android.opengl.Matrix.orthoM;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -39,6 +43,7 @@ public class ArrowRenderer implements Renderer {
 	// Skip over the colour bytes for the current vertex
 	private static final int STRIDE = 
 		(POSITION_COMPONENT_COUNT + COLOR_COMPONENT_COUNT) * BYTES_PER_FLOAT;
+	private static final String U_MATRIX = "u_Matrix";
 	// Store data in in native memory
 	private final FloatBuffer vertexData;
 	private final Context context;
@@ -48,6 +53,9 @@ public class ArrowRenderer implements Renderer {
 	private int aColorLocation;
 	// Set location of attribute
 	private int aPositionLocation;
+	// Matrix for othogonal projection
+	private final float[] projectionMatrix = new float[16];
+	private int uMatrixLocation;
 	
 	// Constructor
 	public ArrowRenderer(Context context) {
@@ -73,17 +81,17 @@ public class ArrowRenderer implements Renderer {
 
 			// Order of coordinates: X, Y, R, G, B
 			// Head
-			0,	0.4f,	1f,	0.2f,	0.2f,	// Top
-			-0.4f,	0.1f,	1f,	0.2f,	0.2f,	// Left
-			0.4f,	0.1f,	1f,	0.2f,	0.2f,	// Right
+			0,	0.5f,	1f,	0.2f,	0.2f,	// Top
+			-0.5f,	0.1f,	1f,	0.2f,	0.2f,	// Left
+			0.5f,	0.1f,	1f,	0.2f,	0.2f,	// Right
 			
 			// Tail - Triangle Fan
 			0,	-0.1f,	0.2f,	1f,	0.2f,	// Middle
-			-0.2f,	-0.4f,	0.2f,	1f,	0.2f,	// Bottom left
-			0.2f,	-0.4f,	0.2f,	1f,	0.2f,	// Bottom right
-			0.2f,	0.1f,	1f,	0.2f,	0.2f,	// Top right
-			-0.2f,	0.1f,	1f,	0.2f,	0.2f,	// Top left
-			-0.2f,	-0.4f,	0.2f,	1f,	0.2f,	// Bottom left
+			-0.25f,	-0.5f,	0.2f,	1f,	0.2f,	// Bottom left
+			0.25f,	-0.5f,	0.2f,	1f,	0.2f,	// Bottom right
+			0.25f,	0.1f,	1f,	0.2f,	0.2f,	// Top right
+			-0.25f,	0.1f,	1f,	0.2f,	0.2f,	// Top left
+			-0.25f,	-0.5f,	0.2f,	1f,	0.2f,	// Bottom left
 		};       
 
 		
@@ -122,11 +130,11 @@ public class ArrowRenderer implements Renderer {
 		program = ShaderHelper.linkProgram(vertexShader, fragmentShader);
 
 		// Now use the program
-		glUseProgram(program);
-		
-		// Get position of attribute
+		glUseProgram(program);               
+
+		// Get positions of Matrix, attribute and colour
+		uMatrixLocation = glGetUniformLocation(program, U_MATRIX);
 		aPositionLocation = glGetAttribLocation(program, A_POSITION);
-		// Get location of colour
 		aColorLocation = glGetAttribLocation(program, A_COLOR);
 
 		// Ensure reading the data from the beginning
@@ -154,6 +162,18 @@ public class ArrowRenderer implements Renderer {
 	
 		// Tell OpenGL the size of the surface
 		glViewport(0, 0, width, height);
+        
+		final float aspectRatio = width > height ? 
+			(float) width / (float) height : 
+			(float) height / (float) width;
+
+		if (width > height) {
+			// Landscape
+			orthoM(projectionMatrix, 0, -aspectRatio, aspectRatio, -1f, 1f, -1f, 1f);
+		} else {
+			// Portrait or square
+			orthoM(projectionMatrix, 0, -1f, 1f, -aspectRatio, aspectRatio, -1f, 1f);
+		}   
 	}
 
 	// Draw a frame
@@ -163,11 +183,14 @@ public class ArrowRenderer implements Renderer {
 		// Clear the screen
 		glClear(GL_COLOR_BUFFER_BIT);
 		
-		/*** Draw first object: Arrow head ***/
+		// Add orthographic projection
+		glUniformMatrix4fv(uMatrixLocation, 1, false, projectionMatrix, 0);
+		
+		// Draw Arrow head
 		// Draw triangles, start at beginning of vertex array, read in three vertices
 		glDrawArrays(GL_TRIANGLES, 0, 3);
 		
-		/*** Draw second object: Arrow tail ***/
+		// Draw Arrow tail
 		// Draw triangle fan, start after first object, read in six vertices
 		glDrawArrays(GL_TRIANGLE_FAN, 3, 6);
 		
