@@ -1,5 +1,5 @@
 /****************************** CompARs ******************************
-* TODO:	OpenGlES Chapter 8.6 / AirHockeyWithImprovedMallets
+* TODO:	OpenGlES Chapter 9 / AirHockeyTouch
 * 	Add black edges (GL_LINE) to arrow
 * 	Remove menu bar
 *	Description, Author, etc
