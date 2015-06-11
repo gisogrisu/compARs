@@ -1,9 +1,7 @@
 /****************************** CompARs ******************************
-* TODO:	OpenGlES Chapter 9 / AirHockeyTouch
+* TODO:	
 * 	Add black edges (GL_LINE) to arrow
-* 	Remove menu bar
 *	Description, Author, etc
-* 	Change to British English
 *********************************************************************/
 package de.noah.naime.compars;
 
@@ -16,7 +14,6 @@ import static android.opengl.GLES20.glUniformMatrix4fv;
 import static android.opengl.GLES20.glUseProgram;
 import static android.opengl.GLES20.glViewport;
 import static android.opengl.Matrix.multiplyMM;
-import static android.opengl.Matrix.rotateM;
 import static android.opengl.Matrix.setIdentityM;
 import static android.opengl.Matrix.setLookAtM;
 
@@ -48,9 +45,12 @@ public class ArrowRenderer implements Renderer {
 	private final float[] modelMatrix = new float[16];
 	// View Matrix
 	private final float[] viewMatrix = new float[16];
+	private final float[] rotatedViewMatrix = new float[16];
 	// Hold results of matrix multiplications
 	private final float[] viewProjectionMatrix = new float[16];
 	private final float[] modelViewProjectionMatrix = new float[16];
+	// Rotate view
+	private float[] rotationMatrix = new float[16];
 	
 	private Arrow arrow;
 	
@@ -105,10 +105,14 @@ public class ArrowRenderer implements Renderer {
 		MatrixHelper.perspectiveM(projectionMatrix, 45, (float) width / (float) height, 1f, 10f);
 		
 		// Create viewMatrix
-		// Eye will be at 0f, 1.2f, 2.2f (eye will be 1.2 units above the x-z plane and 2.2 units in front of screen)
+		// Eye will be at 0, 0, 3f (eye will be straight on the x-z plane and 3 units in front of screen)
 		// Center will be at 0f, 0f, 0f
 		// upX, upY, upZ: Head will be pointing straight up and scene won't be rotated
-		setLookAtM(viewMatrix, 0, 0f, 1.2f, 2.2f, 0f, 0f, 0f, 0f, 1f, 0f);
+		setLookAtM(viewMatrix, 0, 0, 0, 3f, 0f, 0f, 0f, 0f, 1f, 0f);
+
+		// Set rotation to 0
+		setIdentityM(rotationMatrix, 0);
+		multiplyMM(rotatedViewMatrix, 0, viewMatrix, 0, rotationMatrix, 0	);
 	}
 
 	// Draw a frame
@@ -119,19 +123,24 @@ public class ArrowRenderer implements Renderer {
 		glClear(GL_COLOR_BUFFER_BIT);
 		
 		// Multiply projection and view matrices into viewProjectionMatrix
-		multiplyMM(viewProjectionMatrix, 0, projectionMatrix, 0, viewMatrix, 0);
+		multiplyMM(viewProjectionMatrix, 0, projectionMatrix, 0, rotatedViewMatrix, 0);
 		
 		// Position arrow in scene
 		setIdentityM(modelMatrix, 0);
-		rotateM(modelMatrix, 0, -45f, 1f, 0f, 0f);
 		multiplyMM(modelViewProjectionMatrix, 0, viewProjectionMatrix, 0, modelMatrix, 0);
 		
-		//UseProgram
-		//SetUniform
+		// SetUniform
 		glUniformMatrix4fv(uMatrixLocation, 1, false, modelViewProjectionMatrix, 0);
-//        glUniform4f(uColorLocation, r, g, b, 1f);
 		
+		// Draw the arrow
 		arrow.bindData(aPositionLocation, aColorLocation);
 		arrow.draw();
+	}
+	
+	public void rotateViewMatrix(float[] rm){
+		
+		rotationMatrix = rm;
+		
+		multiplyMM(rotatedViewMatrix, 0, viewMatrix, 0, rotationMatrix, 0);
 	}
 }
