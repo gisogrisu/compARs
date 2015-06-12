@@ -1,6 +1,6 @@
 /****************************** CompARs ******************************
 * TODO: Description, Author, etc
-*	Camera-Funktionen aus Pro Android AR2 kommentieren
+*	Comment Camera-Methods in detail
 *	Implement kalman-filter for sensor values:
 *		http://interactive-matter.eu/blog/2009/12/18/filtering-sensor-data-with-a-kalman-filter/
 *		http://de.wikipedia.org/wiki/Kalman-Filter
@@ -14,6 +14,7 @@ import android.app.Activity;
 import android.app.ActivityManager;
 import android.content.Context;
 import android.content.pm.ConfigurationInfo;
+import android.graphics.PixelFormat;
 import android.hardware.Camera;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
@@ -51,11 +52,11 @@ public class CompARsActivity extends Activity implements SensorEventListener {
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		
-		// Initialise glSurfaceView
-		glSurfaceView = new GLSurfaceView(this);
-		
 		// Set layout view
 		setContentView(R.layout.activity_compars);
+		
+		// Initialise glSurfaceView
+		glSurfaceView = (GLSurfaceView) findViewById(R.id.glSurface);
 		
 		// Check if the system supports OpenGL ES 2.0.
 		ActivityManager activityManager = 
@@ -78,7 +79,12 @@ public class CompARsActivity extends Activity implements SensorEventListener {
 
 		if (supportsEs2) {
 			// Request an OpenGL ES 2.0 compatible context.
-			glSurfaceView.setEGLContextClientVersion(2);            
+			glSurfaceView.setEGLContextClientVersion(2);
+			
+			// Get a translucent surface
+			glSurfaceView.getHolder().setFormat(PixelFormat.TRANSLUCENT);
+			glSurfaceView.setEGLConfigChooser(8, 8, 8, 8, 16, 0);
+			glSurfaceView.setZOrderOnTop(true);
 		    
 			// Assign the renderer.
 			glSurfaceView.setRenderer(arrowRenderer);
@@ -99,9 +105,6 @@ public class CompARsActivity extends Activity implements SensorEventListener {
 	    magneticSensor = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
 		inclinationMatrix = new float[16];
 		rotationMatrix = new float[16];
-		
-		// Add glSurfaceView to activity and display on screen
-//		setContentView(glSurfaceView);
 
 		// Get camera preview
 		cameraOn = false;
@@ -130,24 +133,19 @@ public class CompARsActivity extends Activity implements SensorEventListener {
 	@Override
 	protected void onResume() {
 		
-		Log.d("CompARsActivity", "onResume called");
-		
 		super.onResume();
 		
 		// Register sensor listeners
-		if(accelerationSensor != null){
+		if(accelerationSensor != null)
 			sensorManager.registerListener(this, accelerationSensor, SensorManager.SENSOR_DELAY_NORMAL);
-		}
 		
-		if(magneticSensor != null){
+		if(magneticSensor != null)
 			sensorManager.registerListener(this, magneticSensor, SensorManager.SENSOR_DELAY_NORMAL);
-		}
 		
 		camera=Camera.open();
 	    
-		if (rendererSet) {
+		if (rendererSet)
 			glSurfaceView.onResume();
-		}
 	}
 	
 	// New sensor values are available
@@ -211,8 +209,6 @@ public class CompARsActivity extends Activity implements SensorEventListener {
     	
     	public void surfaceChanged(SurfaceHolder holder, int format, int width,	int height) {
     		
-    		Log.d("CompARsActivity", "surfaceChanged called");
-    		
     		Camera.Parameters parameters=camera.getParameters();
     		
     		Camera.Size size = parameters.getPreferredPreviewSizeForVideo();
@@ -220,6 +216,7 @@ public class CompARsActivity extends Activity implements SensorEventListener {
     		camera.setParameters(parameters);
     		
     		camera.setDisplayOrientation(90);
+    		
     		try {
 				camera.setPreviewDisplay(holder);
 			}

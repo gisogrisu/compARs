@@ -20,6 +20,7 @@ import static android.opengl.Matrix.setLookAtM;
 import javax.microedition.khronos.opengles.GL10;
 
 import android.content.Context;
+import android.opengl.GLES20;
 import android.opengl.GLSurfaceView.Renderer;
 import de.noah.naime.compars.util.Arrow;
 import de.noah.naime.compars.util.MatrixHelper;
@@ -38,7 +39,7 @@ public class ArrowRenderer implements Renderer {
 	private int aColorLocation;
 	// Set location of attribute
 	private int aPositionLocation;
-	// Matrix for othogonal projection
+	// Matrix for orthogonal projection
 	private final float[] projectionMatrix = new float[16];
 	private int uMatrixLocation;
 	// Model matrix
@@ -64,8 +65,9 @@ public class ArrowRenderer implements Renderer {
 	public void onSurfaceCreated(GL10 glUnused, 
 			javax.microedition.khronos.egl.EGLConfig config) {
 		
-		// Set background to black
+		// Set background to translucent
 		glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+		GLES20.glClear(GLES20.GL_DEPTH_BUFFER_BIT | GLES20.GL_COLOR_BUFFER_BIT);
 
 		// Create arrow vertices
 		arrow = new Arrow();
