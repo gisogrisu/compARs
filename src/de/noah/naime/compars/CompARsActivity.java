@@ -1,6 +1,6 @@
 /****************************** CompARs ******************************
 * TODO: Description, Author, etc
-*	Add camera view
+*	Camera-Funktionen aus Pro Android AR2 kommentieren
 *	Implement kalman-filter for sensor values:
 *		http://interactive-matter.eu/blog/2009/12/18/filtering-sensor-data-with-a-kalman-filter/
 *		http://de.wikipedia.org/wiki/Kalman-Filter
@@ -8,10 +8,13 @@
 *********************************************************************/
 package de.noah.naime.compars;
 
+import java.io.IOException;
+
 import android.app.Activity;
 import android.app.ActivityManager;
 import android.content.Context;
 import android.content.pm.ConfigurationInfo;
+import android.hardware.Camera;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
@@ -19,6 +22,9 @@ import android.hardware.SensorManager;
 import android.opengl.GLSurfaceView;
 import android.os.Build;
 import android.os.Bundle;
+import android.util.Log;
+import android.view.SurfaceHolder;
+import android.view.SurfaceView;
 import android.widget.Toast;
 
 public class CompARsActivity extends Activity implements SensorEventListener {
@@ -35,6 +41,11 @@ public class CompARsActivity extends Activity implements SensorEventListener {
 	private float[] magneticValues;
 	private float[] inclinationMatrix;
 	private float[] rotationMatrix;
+	// Get Camera preview
+	private boolean cameraOn;
+	Camera camera;
+	SurfaceView cameraPreview;
+	SurfaceHolder previewHolder;
     
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -42,6 +53,9 @@ public class CompARsActivity extends Activity implements SensorEventListener {
 		
 		// Initialise glSurfaceView
 		glSurfaceView = new GLSurfaceView(this);
+		
+		// Set layout view
+		setContentView(R.layout.activity_compars);
 		
 		// Check if the system supports OpenGL ES 2.0.
 		ActivityManager activityManager = 
@@ -87,7 +101,13 @@ public class CompARsActivity extends Activity implements SensorEventListener {
 		rotationMatrix = new float[16];
 		
 		// Add glSurfaceView to activity and display on screen
-		setContentView(glSurfaceView);
+//		setContentView(glSurfaceView);
+
+		// Get camera preview
+		cameraOn = false;
+		cameraPreview = (SurfaceView)findViewById(R.id.cameraPreview);
+        previewHolder = cameraPreview.getHolder();
+        previewHolder.addCallback(surfaceCallback);
 	}
 
 	@Override
@@ -95,14 +115,23 @@ public class CompARsActivity extends Activity implements SensorEventListener {
 	    super.onPause();
 	    
 	    sensorManager.unregisterListener(this);
+ 	    
+	    if (cameraOn)
+	        camera.stopPreview();
+	      
+	    camera.release();
+	    camera=null;
+	    cameraOn=false;
 	    
-	    if (rendererSet) {
+	    if (rendererSet) 
 	    	glSurfaceView.onPause();
-	    }
 	}
 
 	@Override
 	protected void onResume() {
+		
+		Log.d("CompARsActivity", "onResume called");
+		
 		super.onResume();
 		
 		// Register sensor listeners
@@ -113,6 +142,8 @@ public class CompARsActivity extends Activity implements SensorEventListener {
 		if(magneticSensor != null){
 			sensorManager.registerListener(this, magneticSensor, SensorManager.SENSOR_DELAY_NORMAL);
 		}
+		
+		camera=Camera.open();
 	    
 		if (rendererSet) {
 			glSurfaceView.onResume();
@@ -165,4 +196,47 @@ public class CompARsActivity extends Activity implements SensorEventListener {
 		
 		return output;
 	}
+    
+    SurfaceHolder.Callback surfaceCallback=new SurfaceHolder.Callback() {
+    	
+    	public void surfaceCreated(SurfaceHolder holder) {
+    		try {
+    			camera.setPreviewDisplay(previewHolder);	
+    		}
+    		
+    		catch (Throwable t) {
+    			Log.e("CompARsActivity", "Exception in setPreviewDisplay()", t);
+    		}
+    	}
+    	
+    	public void surfaceChanged(SurfaceHolder holder, int format, int width,	int height) {
+    		
+    		Log.d("CompARsActivity", "surfaceChanged called");
+    		
+    		Camera.Parameters parameters=camera.getParameters();
+    		
+    		Camera.Size size = parameters.getPreferredPreviewSizeForVideo();
+    		parameters.setPreviewSize(size.width, size.height);
+    		camera.setParameters(parameters);
+    		
+    		camera.setDisplayOrientation(90);
+    		try {
+				camera.setPreviewDisplay(holder);
+			}
+    		
+    		catch (IOException e) {
+				Log.e("CompARsActivity", "Exception caused by setPreviewDisplay()");
+				
+				e.printStackTrace();
+			}
+
+    		camera.startPreview();
+    		cameraOn = true;
+	}
+    	
+    	public void surfaceDestroyed(SurfaceHolder holder) {
+    		// not used
+    	}
+    	
+    };
 }
